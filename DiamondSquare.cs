@@ -9,8 +9,12 @@ public class DiamondSquare: MonoBehaviour
 	public int iterations;
 	//private const int numVertices = 2*iterations -1;
 
+	/* Private Constants */
+	private const int MAX_HEIGHT = 5;
+
 	private Vector3[] test = new Vector3[2*3*4];
 	private float[,] height = new float[3, 3];
+
     // Use this for initialization
     void Start()
     {
@@ -82,23 +86,21 @@ public class DiamondSquare: MonoBehaviour
 		int index = 0;
 
 		// 3 verts per tri, 2 tris per unitsquare, 4 unitsquares per gridsquare
-		Vector3[] finalMesh = new Vector3[(int)Mathf.Pow(iterations, 2)*6];
+		Vector3[] finalMesh = new Vector3[(int)Mathf.Pow(iterations, 2)*6*4+6];
 		Debug.Log("finalMesh created with size: "+finalMesh.Length);
 
-		for (int i=0; i<iterations; i++) {
-			for (int j=0; j<iterations; j++) {
-				Debug.Log("creating square: ["+i+", "+j+"], using index: "+index);
-				unitSquare(finalMesh, index, i, j);
-				index+=6;
+		for (int i=0; i<iterations*2-1; i+=2) {
+			for (int j=0; j<iterations*2-1; j+=2) {
+				Debug.Log("Creating a 4x4 unit square at: "+i+", "+j+", accessing index: "+index+" to array size: "+finalMesh.Length);
+				// create a 4 squares, to perform operations on
+				unitSquare(finalMesh, index+=6, i, j);
+				unitSquare(finalMesh, index+=6, i, j+1);
+				unitSquare(finalMesh, index+=6, i+1, j);
+				unitSquare(finalMesh, index+=6, i+1, j+1);
 			}
 		}
-
-		float blop=0f;
-		for(int i=0; i<iterations; i++) {
-			finalMesh[i].y += blop;
-			blop+=0.03f;
-
-		}
+		
+		
 
 
 
@@ -115,6 +117,37 @@ public class DiamondSquare: MonoBehaviour
 		v[index+5] = new Vector3(posx+1, 0, posz);
 	}
 
+	// diamond step, takes 2d array of floats, calculates average of four corners and applies to middle
+	void diamondStep(float[,] h, int x, int y, int len) {
+		h[x+len/2, y+len/2] = (h[x, y]+h[x+len, y]+h[x, y+len]+h[x+len, y+len])/4;
+
+	}
+
+	// square step. note that length is halved relative to the diamond step
+	void squareStep(float[,] h, int x, int y, int len) {
+		// need to keep the relative positions in mind once len is added!
+		int rightx = x+len*2;
+		int leftx = x-len*2;
+		int upy = y-len*2;
+		int downy = y+len*2;
+		// top
+		h[x, y+len] = (y==0) ? (h[x+len, y]+h[x-len, y]+h[x, y+len])/3 : (h[x+len, y]+h[x-len, y]+h[x, y+len]+h[x, y-len])/4;
+		// bottom
+		h[x, y+len] = (y==0) ? (h[x+len, y]+h[x-len, y]+h[x, y+len])/3 : (h[x+len, y]+h[x-len, y]+h[x, y+len]+h[x, y-len])/4;
+		// left
+		h[x, y+len] = (y==0) ? (h[x+len, y]+h[x-len, y]+h[x, y+len])/3 : (h[x+len, y]+h[x-len, y]+h[x, y+len]+h[x, y-len])/4;
+		// right
+		h[x, y+len] = (y==0) ? (h[x+len, y]+h[x-len, y]+h[x, y+len])/3 : (h[x+len, y]+h[x-len, y]+h[x, y+len]+h[x, y-len])/4;
+	}
+
+	// generate appropriate random numbers
+	float genRandHeight() {
+		return Random.Range(0, MAX_HEIGHT);
+	}
+
+
+
+	// creates a 4x4 square, made up of unit squares
 	void squarex4(Vector3[] v, int index, int posx, int posz) {
 		unitSquare(v, index+=6, posx, posz);
 		unitSquare(v, index+=6, posx+1, posz);
